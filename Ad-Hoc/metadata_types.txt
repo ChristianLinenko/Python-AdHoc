@@ -1,0 +1,21 @@
+ApexClass
+ApexComponent
+ApexPage - Visualforce Page
+ApexTrigger
+CustomLabel
+CustomObject
+*CustomField
+*RecordType
+*ValidationRule
+*Workflow
+FieldSet
+Flow
+Group
+Layout
+ListView
+PermissionSet
+Profile
+Queue
+RemoteSiteSetting
+Role
+StaticResource
