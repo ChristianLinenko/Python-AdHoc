@@ -1,8 +1,31 @@
 import PyConfluence.Confluence
 import sys
 import PySalesforce.PySalesforce
-import datetime
+import html
 import json
+
+def getDefaultPageInfo(row, instance_url):
+    created_date = row.get('CreatedDate')
+    id = row.get('Id')
+    created_by = 'GSO Salesforce'
+    if (row.get('CreatedBy') is not None):
+        created_by = row.get('CreatedBy')['Name']
+    page_html = '<p>Created Date: ' + created_date[:10] + '</p>'
+    page_html += '<p>Created By: ' + created_by + '</p>'
+    url = instance_url + '/' + id
+    l = '<a href = "' + url + '">' + url + '</a>'
+    page_html += '<p>Link to record' + l + '</p>'
+    page_html += '<p>Business Owner: TBD</p>'
+    return page_html
+
+def getTableHTML(row):
+    created_date = row.get('CreatedDate')
+    created_by = 'GSO Salesforce'
+    if (row.get('CreatedBy') is not None):
+        created_by = row.get('CreatedBy')['Name']
+    page_html = '<h3>Change History</h3>'
+    page_html += '<table class="confluenceTable"><tbody><tr><th class="confluenceTh">Last Modified By</th><th class="confluenceTh">Last Modified Date</th><th class="confluenceTh">Change Description</th><th class="confluenceTh">Link to JIRA Story</th></tr><tr><td class="confluenceTd">' + created_date[:10] + '</td><td class="confluenceTd">' + created_by + '</td><td class="confluenceTd">Initial creation by Python</td><td class="confluenceTd">TBD</td></tr><tr><td class="confluenceTd"></td><td class="confluenceTd"></td><td class="confluenceTd"></td><td class="confluenceTd"></td></tr></tbody></table>'
+    return page_html
 
 def createMetadataTypesPages():
     filename = 'metadata_types.txt'
@@ -16,7 +39,7 @@ def createMetadataTypesPages():
         print(s)
         if(s.startswith('*')):
             new_str = s.replace('*', '')
-            PyConfluence.Confluence.Helpers.createOrFindPage(new_str, last_parent_name)
+            #PyConfluence.Confluence.Helpers.createOrFindPage(new_str, last_parent_name)
         else:
             PyConfluence.Confluence.Helpers.createOrFindPage(s, 'Data Dictionary')
             last_parent_name = s
@@ -26,58 +49,124 @@ def createMetadataTypesPages():
 
 def createApexClassPages(auth_key, instance_url):
     parent_id = PyConfluence.Confluence.Helpers.createOrFindPage('ApexClass', 'Data Dictionary')
-    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name FROM ApexClass WHERE Status = \'Active\' ORDER BY Name'
+    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name, ApiVersion FROM ApexClass WHERE Status = \'Active\' ORDER BY Name'
     query_res = PySalesforce.PySalesforce.Tooling.query(query_string, auth_key, instance_url)
     #print(json.dumps(query_res, indent=2))
     count = 0
     for row in query_res['records']:
         name = row.get('Name')
-        created_date = row.get('CreatedDate')
-        created_by = 'GSO Salesforce'
-
-        if(row.get('CreatedBy') is not None):
-            created_by = row.get('CreatedBy')['Name']
-        page_html = '<p>Created Date: ' + created_date[:10] + '</p>'
-        page_html += '<p>Created By: ' + created_by + '</p>'
-        page_html += '<p>Owner: TBD</p>'
+        api_version = row.get('ApiVersion')
+        page_html = getDefaultPageInfo(row, instance_url)
         page_html += '<p>Description: TBD</p>'
+        page_html += '<p>API Version: ' + str(api_version) + '</p>'
         page_html += '<p>Link to GIT: TBD</p>'
-        page_html += '<h3 id = "' + name + '-UpdatesTable">Updates Table</h3>'
-        if False:
-            page_html += '<div class ="table-wrap">';
-            page_html += '<table class ="confluenceTable tablesorter tablesorter-default stickyTableHeaders" role="grid" style="padding: 0px;">'
-            page_html += '<thead class ="tableFloatingHeaderOriginal">'
-            page_html += '<tr role = "row" class ="tablesorter-headerRow">'
-            page_html += '< th class ="confluenceTh tablesorter-header sortableHeader tablesorter-headerUnSorted" data-column="2" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="Change Description: No sort applied, activate to apply an ascending sort" style="user-select: none;">'
-            page_html += '< div class ="tablesorter-header-inner" >Last Modified By< /div></th>'
-            page_html += '< th class ="confluenceTh tablesorter-header sortableHeader tablesorter-headerUnSorted" data-column="2" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="Change Description: No sort applied, activate to apply an ascending sort" style="user-select: none;">'
-            page_html += '< div class ="tablesorter-header-inner" >Last Modified Date< /div></th>'
-            page_html += '< th class ="confluenceTh tablesorter-header sortableHeader tablesorter-headerUnSorted" data-column="2" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="Change Description: No sort applied, activate to apply an ascending sort" style="user-select: none;">'
-            page_html += '< div class ="tablesorter-header-inner" > Change Description < /div></th>'
-            page_html += '< th class ="confluenceTh tablesorter-header sortableHeader tablesorter-headerUnSorted" data-column="2" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="Change Description: No sort applied, activate to apply an ascending sort" style="user-select: none;">'
-            page_html += '< div class ="tablesorter-header-inner" > Link to JIRA Story < /div></th>'
-            page_html += '</tr>'
-            page_html += '</thead>'
-            page_html += '<tbody aria - live = "polite" aria - relevant = "all" >'
-            page_html += '<tr role = "row" >'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '</tr>'
-            page_html += '<tr role = "row" >'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '<td class ="confluenceTd"/>'
-            page_html += '</tr>'
-            page_html += '</tbody>'
-            page_html += '</table>'
-            page_html += '</div>'
-        if(count == 0):
-            PyConfluence.Confluence.Helpers.createOrFindPage(name, 'ApexClass', page_html, parent_id)
+        page_html += getTableHTML(row)
+        PyConfluence.Confluence.Helpers.createOrFindPage(name, 'ApexClass', page_html, parent_id)
         count += 1
-    print('Created ' + str(count) + ' pages')
+    print('Created ' + str(count) + ' ApexClass pages')
+
+def createApexComponentPages(auth_key, instance_url):
+    parent_id = PyConfluence.Confluence.Helpers.createOrFindPage('ApexComponent', 'Data Dictionary')
+    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name, ApiVersion, Markup FROM ApexComponent ORDER BY Name'
+    query_res = PySalesforce.PySalesforce.Tooling.query(query_string, auth_key, instance_url)
+    # print(json.dumps(query_res, indent=2))
+    count = 0
+    for row in query_res['records']:
+        name = row.get('Name')
+        api_version = row.get('ApiVersion')
+        markup = row.get('Markup')
+        page_html = getDefaultPageInfo(row, instance_url)
+        page_html += '<p>Description: TBD</p>'
+        page_html += '<p>API Version: ' + str(api_version) + '</p>'
+        page_html += '<p>Markup: ' + markup + '</p>'
+        page_html += '<p>Link to GIT: TBD</p>'
+        page_html += getTableHTML(row)
+        PyConfluence.Confluence.Helpers.createOrFindPage(name, 'ApexComponent', page_html, parent_id)
+        count += 1
+    print('Created ' + str(count) + ' ApexComponent pages')
+
+def createVisualforcePages(auth_key, instance_url):
+    parent_id = PyConfluence.Confluence.Helpers.createOrFindPage('ApexPage - Visualforce Page', 'Data Dictionary')
+    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name, ApiVersion, Description, Markup FROM ApexPage ORDER BY Name'
+    query_res = PySalesforce.PySalesforce.Tooling.query(query_string, auth_key, instance_url)
+    # print(json.dumps(query_res, indent=2))
+    count = 0
+    for row in query_res['records']:
+        name = row.get('Name')
+        api_version = row.get('ApiVersion')
+        markup = row.get('Markup')
+        description = 'TBD'
+        if(row.get('Description') is not None):
+            description = row.get('Description')
+        page_html = getDefaultPageInfo(row, instance_url)
+        page_html += '<p>Description: ' + description + '</p>'
+        page_html += '<p>API Version: ' + str(api_version) + '</p>'
+        page_html += '<p>Markup: ' + markup + '</p>'
+        page_html += '<p>Link to GIT: TBD</p>'
+        page_html += getTableHTML(row)
+        PyConfluence.Confluence.Helpers.createOrFindPage(name, 'ApexPage - Visualforce Page', page_html, parent_id)
+        count += 1
+    print('Created ' + str(count) + ' Visualforce pages')
+
+def createApexTriggerPages(auth_key, instance_url):
+    parent_id = PyConfluence.Confluence.Helpers.createOrFindPage('ApexTrigger', 'Data Dictionary')
+    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name, ApiVersion, TableEnumOrId FROM ApexTrigger WHERE Status = \'Active\' ORDER BY Name'
+    query_res = PySalesforce.PySalesforce.Tooling.query(query_string, auth_key, instance_url)
+    #print(json.dumps(query_res, indent=2))
+    count = 0
+    for row in query_res['records']:
+        name = row.get('Name')
+        api_version = row.get('ApiVersion')
+        object_name = row.get('TableEnumOrId')
+        page_html = getDefaultPageInfo(row, instance_url)
+        page_html += '<p>Description: TBD</p>'
+        page_html += '<p>API Version: ' + str(api_version) + '</p>'
+        page_html += '<p>Object: ' + object_name + '</p>'
+        page_html += '<p>Link to GIT: TBD</p>'
+        page_html += getTableHTML(row)
+        PyConfluence.Confluence.Helpers.createOrFindPage(name, 'ApexTrigger', page_html, parent_id)
+        count += 1
+    print('Created ' + str(count) + ' ApexTrigger pages')
+
+def createStaticResourcePages(auth_key, instance_url):
+    parent_id = PyConfluence.Confluence.Helpers.createOrFindPage('StaticResource', 'Data Dictionary')
+    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name, Description FROM StaticResource ORDER BY Name'
+    query_res = PySalesforce.PySalesforce.Tooling.query(query_string, auth_key, instance_url)
+    # print(json.dumps(query_res, indent=2))
+    count = 0
+    for row in query_res['records']:
+        name = row.get('Name')
+        description = 'TBD'
+        if (row.get('Description') is not None):
+            description = row.get('Description')
+        page_html = getDefaultPageInfo(row, instance_url)
+        page_html += '<p>Description: ' + description + '</p>'
+        page_html += '<p>Link to GIT: TBD</p>'
+        page_html += getTableHTML(row)
+        PyConfluence.Confluence.Helpers.createOrFindPage(name, 'StaticResource', page_html, parent_id)
+        count += 1
+    print('Created ' + str(count) + ' StaticResource pages')
+
+# still needs work
+def createCustomLabelPages(auth_key, instance_url):
+    parent_id = PyConfluence.Confluence.Helpers.createOrFindPage('CustomLabel', 'Data Dictionary')
+    query_string = 'SELECT Id, Name, CreatedDate, CreatedBy.Name, value, shortDescription FROM CustomLabel ORDER BY Name'
+    query_res = PySalesforce.PySalesforce.Tooling.query(query_string, auth_key, instance_url)
+    print(json.dumps(query_res, indent=2))
+    count = 0
+    for row in query_res['records']:
+        page_html = getDefaultPageInfo(row, instance_url)
+        name = row.get('Name')
+        value = row.get('value')
+        shortDescription = 'TBD'
+        if (row.get('Description') is not None):
+            shortDescription = row.get('Description')
+        page_html += '<p>Description: ' + shortDescription + '</p>'
+        page_html += '<p>Value: ' + value + '</p>'
+        if(count == 0):
+            PyConfluence.Confluence.Helpers.createOrFindPage(name, 'ApexTrigger', page_html, parent_id)
+        count += 1
+    print('Created ' + str(count) + ' ApexTrigger pages')
 
 def getSalesforceAccessToken():
     print('Getting oauth info')
@@ -91,7 +180,15 @@ def main():
     instance_url = auth_res.get('instance_url')
     print('auth_key: ' + auth_key)
     print('instance_url: ' + instance_url)
-    createApexClassPages(auth_key, instance_url)
+    # works
+    #createApexClassPages(auth_key, instance_url)
+    #createApexComponentPages(auth_key, instance_url)
+    #createVisualforcePages(auth_key, instance_url)
+    #createApexTriggerPages(auth_key, instance_url)
+    #createStaticResourcePages(auth_key, instance_url)
+
+    #doesn't work
+    #createCustomLabelPages(auth_key, instance_url)
     sys.exit(1)
 
 if __name__ == '__main__':

@@ -36,16 +36,28 @@ class Helpers:
             parent_id = parent_page_Id
             if(parent_id is None):
                 parent_id = Helpers.getPageIdByName(parent_page_name)
-            if(parent_page_name is not None):
+            if(parent_page_name is not None ):
                 url = 'https://confluence/rest/api/content/'
                 if(page_html == None):
                     page_html = '<p>This is a new page I created in Python.</p>'
-                data = '{"type":"page","title":"' + page_name + '", "ancestors":[{"id":' + parent_id + '}], "space":{"key":"' + Helpers.space + '"},"body":{"storage":{"value":"' + page_html + '","representation":"storage"}}}'
+                #print('page_html: ' + page_html)
+                #data = '{"type":"page","title":"' + page_name + '", "ancestors":[{"id":' + parent_id + '}], "space":{"key":"' + Helpers.space + '"},"body":{"storage":{"value":"' + page_html + '","representation":"storage"}}}'
+                bod = {
+                    'type' : 'page',
+                    'title' : page_name,
+                    'ancestors' : [{'id' : parent_id}],
+                    'space' : {'key' : Helpers.space},
+                    'body' : {
+                        'storage' : {'value': page_html,
+                        'representation' : 'storage'}
+                    }
+                }
+                json_str = json.dumps(bod)
                 headers = {'Content-Type': 'application/json'}
-                data = Webservices.makePostCall(url, data, headers)
-                if((data is not None) & (data.get('statusCode') == 200) & (data.get('id') is not None)):
+                data = Webservices.makePostCall(url, json_str, headers)
+                if((data is not None) & (data.get('id') is not None)):
                     page_id = data.get('id')
-                    print('Page ' + page_name + ' created: ' + page_id)
+                    #print('Page ' + page_name + ' created: ' + page_id)
                 elif (data.get('statusCode') is not 200):
                     print('Error creating page: ')
                     print(json.dumps(data, indent=2))
