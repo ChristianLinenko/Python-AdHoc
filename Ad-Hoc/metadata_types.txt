@@ -3,19 +3,15 @@ ApexComponent
 ApexPage - Visualforce Page
 ApexTrigger
 CustomLabel
-CustomObject
-*CustomField
-*RecordType
-*ValidationRule
-*Workflow
-FieldSet
+CustomSetting
 Flow
-Group
-Layout
-ListView
+Groups
+*Public Group
+*Queue
+Objects
+*Standard
+*Custom
 PermissionSet
 Profile
-Queue
-RemoteSiteSetting
 Role
 StaticResource
